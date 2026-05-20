@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { google } = require('googleapis'); // Thêm thư viện Google
 require('dotenv').config();
 
 const app = express();
@@ -86,6 +87,42 @@ app.post('/scan', async (req, res) => {
     } catch (error) {
         console.error("❌ Lỗi Server:", error);
         res.json({ text: "Lỗi xử lý AI: " + (error.message || "Không xác định") });
+    }
+});
+
+// --- API ĐỌC DANH SÁCH MODEL TỪ TRANG TÍNH 5 ---
+app.get('/api/models', async (req, res) => {
+    try {
+        const SHEET_ID = process.env.GOOGLE_SHEET_ID;
+        let privateKey = process.env.GOOGLE_PRIVATE_KEY;
+        
+        // Xử lý dấu ngoặc kép nếu Render tự động thêm vào
+        if (privateKey && privateKey.startsWith('"') && privateKey.endsWith('"')) {
+            privateKey = privateKey.slice(1, -1);
+        }
+
+        const auth = new google.auth.GoogleAuth({
+            credentials: {
+                client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+                private_key: privateKey ? privateKey.replace(/\\n/g, '\n') : undefined,
+            },
+            scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+        });
+
+        const sheets = google.sheets({ version: 'v4', auth });
+
+        const response = await sheets.spreadsheets.values.get({
+            spreadsheetId: SHEET_ID,
+            range: "'Trang tính 5'!B2:B", 
+        });
+
+        const rows = response.data.values || [];
+        const models = rows.map(row => row[0]).filter(Boolean);
+
+        res.json({ success: true, models: models });
+    } catch (error) {
+        console.error("❌ Lỗi đọc sheet:", error.message);
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
