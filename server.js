@@ -113,7 +113,7 @@ app.get('/api/models', async (req, res) => {
 
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId: SHEET_ID,
-            range: "'Trang tính 5'!B2:B", 
+            range: "'Trang tính5'!B2:B", 
         });
 
         const rows = response.data.values || [];
