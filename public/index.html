@@ -77,12 +77,19 @@
         <div class="font-serif font-bold text-xl text-[#78350f] flex items-center gap-2">
             <i class="fa-solid fa-camera-retro"></i> Trích Xuất Văn Bản
         </div>
-        <select id="langSelect" class="text-xs font-medium border border-amber-200 rounded-lg px-2 py-1.5 bg-amber-50 text-[#78350f] focus:outline-none">
-            <option value="chs">Trung (Giản)</option>
-            <option value="cht">Trung (Phồn)</option>
-            <option value="vie">Tiếng Việt</option>
-            <option value="eng">Tiếng Anh</option>
-        </select>
+        <div class="flex gap-2">
+            <!-- Thêm ô chọn Model -->
+            <select id="modelSelect" class="text-xs font-mono border border-amber-200 rounded-lg px-2 py-1.5 bg-amber-50 text-[#78350f] focus:outline-none w-24 truncate">
+                <option value="">Tải model...</option>
+            </select>
+            <!-- Ô chọn ngôn ngữ cũ -->
+            <select id="langSelect" class="text-xs font-medium border border-amber-200 rounded-lg px-2 py-1.5 bg-amber-50 text-[#78350f] focus:outline-none">
+                <option value="chs">Trung (Giản)</option>
+                <option value="cht">Trung (Phồn)</option>
+                <option value="vie">Tiếng Việt</option>
+                <option value="eng">Tiếng Anh</option>
+            </select>
+        </div>
     </header>
 
     <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
@@ -216,13 +223,14 @@
         
             try {
                 const compressedBase64 = await compressImage(imageDisplay.src);
-        
+                const selectedModel = document.getElementById('modelSelect').value;
                 const response = await fetch('/scan', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         imageBase64: compressedBase64,
                         language: lang 
+                        modelName: selectedModel // Gửi model xuống backend
                     })
                 });
         
@@ -300,6 +308,43 @@
                 };
             });
         }
+
+        // --- HÀM TẢI DANH SÁCH MODEL TỪ BACKEND ---
+        async function fetchModels() {
+            const select = document.getElementById('modelSelect');
+            try {
+                const res = await fetch('/api/models');
+                const data = await res.json();
+                
+                if (data.success && data.models.length > 0) {
+                    select.innerHTML = '';
+                    data.models.forEach((m, idx) => {
+                        const opt = document.createElement('option');
+                        opt.value = m;
+                        opt.text = m.replace('models/', '');
+                        if (idx === 0) opt.selected = true;
+                        select.appendChild(opt);
+                    });
+                } else {
+                    throw new Error("Không có dữ liệu");
+                }
+            } catch (e) {
+                console.error(e);
+                // Dùng model dự phòng nếu lỗi
+                select.innerHTML = '';
+                const fallbackModels = ['gemini-2.5-flash', 'gemini-3-flash-preview'];
+                fallbackModels.forEach((m, idx) => {
+                    const opt = document.createElement('option');
+                    opt.value = m;
+                    opt.text = m + ' (Dự phòng)';
+                    if (idx === 0) opt.selected = true;
+                    select.appendChild(opt);
+                });
+            }
+        }
+
+        // Chạy ngay khi mở web
+        document.addEventListener('DOMContentLoaded', fetchModels);
     </script>
 </body>
 </html>
