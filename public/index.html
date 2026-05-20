@@ -229,8 +229,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         imageBase64: compressedBase64,
-                        language: lang 
-                        modelName: selectedModel // Gửi model xuống backend
+                        language: lang, // <--- ĐÃ THÊM DẤU PHẨY
+                        modelName: selectedModel 
                     })
                 });
         
